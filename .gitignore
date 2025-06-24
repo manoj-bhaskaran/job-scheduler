@@ -1,0 +1,20 @@
+# VS Code
+.vscode/
+*.code-workspace
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+env/
+venv/
+
+# PowerShell backups
+*.ps1~
+
+# Node
+node_modules/
