@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/job-spec.schema.json",
+  "title": "Job Specification",
+  "description": "Schema for defining a job to be scheduled by the job-scheduler system.",
+  "type": "object",
+  "required": ["job_name", "run_as_user", "trigger", "steps"],
+  "properties": {
+    "job_name": {
+      "type": "string",
+      "description": "Unique identifier for the job."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the job."
+    },
+    "working_directory": {
+      "type": "string",
+      "description": "Default working directory for the job (optional)."
+    },
+    "run_as_user": {
+      "type": "string",
+      "description": "Default user ID or username under which the job will be executed."
+    },
+    "trigger": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["time", "event", "dependency"],
+          "description": "Trigger type for job execution."
+        },
+        "schedule": {
+          "type": "string",
+          "description": "Cron-like schedule expression (only for time-based triggers).",
+          "pattern": "^(\\S+\\s+){4}\\S+$"
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "time" } }
+          },
+          "then": {
+            "required": ["schedule"]
+          }
+        }
+      ]
+    },
+    "result_conditions": {
+      "type": "object",
+      "description": "Criteria to determine job success, failure, or warning based on step return codes.",
+      "properties": {
+        "success_max_return_code": {
+          "type": "integer",
+          "description": "Maximum return code across all steps that is still considered a successful job.",
+          "default": 0
+        },
+        "warning_max_return_code": {
+          "type": "integer",
+          "description": "Maximum return code across all steps that is considered a warning. Any return code above this triggers a failure.",
+          "default": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "steps": {
+      "type": "array",
+      "description": "Ordered list of steps to execute as part of the job.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "path"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Descriptive name of the step."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description of the step."
+          },
+          "path": {
+            "type": "string",
+            "description": "Path to the script or executable."
+          },
+          "args": {
+            "type": "array",
+            "description": "Optional arguments to pass to the script or executable.",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "working_directory": {
+            "type": "string",
+            "description": "Optional override for the job's working directory."
+          },
+          "run_as_user": {
+            "type": "string",
+            "description": "Optional override for the job's run_as_user."
+          },
+          "condition": {
+            "type": "object",
+            "description": "Optional condition under which this step should run.",
+            "required": ["operator", "operands"],
+            "properties": {
+              "operator": {
+                "type": "string",
+                "enum": ["AND", "OR"],
+                "description": "Logical operator to combine multiple conditions."
+              },
+              "operands": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["type", "comparison", "value"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["all_previous", "step"],
+                      "description": "Condition type: all previous steps or a specific step."
+                    },
+                    "step_name": {
+                      "type": "string",
+                      "description": "Name of the step to check (required if type is 'step')."
+                    },
+                    "comparison": {
+                      "type": "string",
+                      "enum": ["<", "<=", ">=", ">"],
+                      "description": "Comparison operator for return codes."
+                    },
+                    "value": {
+                      "type": "integer",
+                      "description": "Return code to compare against."
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": { "type": { "const": "step" } }
+                      },
+                      "then": {
+                        "required": ["step_name"]
+                      }
+                    }
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

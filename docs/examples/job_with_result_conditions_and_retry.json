@@ -1,0 +1,64 @@
+{
+  "job_name": "etl_pipeline",
+  "run_as_user": "CORP\\svc_etl",
+  "trigger": {
+    "type": "time",
+    "schedule": "30 1 * * *"
+  },
+  "result_conditions": {
+    "success_max_return_code": 0,
+    "warning_max_return_code": 5,
+    "step_exceptions": [
+      {
+        "step_name": "load",
+        "on_return_code": [
+          2
+        ],
+        "action": "warn"
+      }
+    ]
+  },
+  "retry_policy": {
+    "max_attempts": 3,
+    "delay_seconds": 60,
+    "backoff_factor": 2,
+    "retry_on": [
+      1,
+      2
+    ]
+  },
+  "log_settings": {
+    "stdout": "C:\\logs\\etl.log",
+    "stderr": "C:\\logs\\etl.err",
+    "rotation": {
+      "max_size_mb": 50,
+      "max_files": 5
+    },
+    "destination": "file"
+  },
+  "steps": [
+    {
+      "name": "extract",
+      "path": "C:\\jobs\\etl\\extract.py",
+      "args": [
+        "--source",
+        "db1"
+      ]
+    },
+    {
+      "name": "transform",
+      "path": "C:\\jobs\\etl\\transform.py"
+    },
+    {
+      "name": "load",
+      "path": "C:\\jobs\\etl\\load.ps1",
+      "retry_policy": {
+        "max_attempts": 2,
+        "delay_seconds": 30,
+        "retry_on": [
+          2
+        ]
+      }
+    }
+  ]
+}
