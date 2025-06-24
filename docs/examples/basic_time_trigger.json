@@ -1,0 +1,16 @@
+{
+  "job_name": "nightly_backup",
+  "description": "Runs a nightly backup job",
+  "working_directory": "C:\\jobs\\backup",
+  "run_as_user": "CORP\\svc_backup",
+  "trigger": {
+    "type": "time",
+    "schedule": "0 2 * * *"
+  },
+  "steps": [
+    {
+      "name": "run_backup",
+      "path": "C:\\jobs\\backup\\run_backup.ps1"
+    }
+  ]
+}

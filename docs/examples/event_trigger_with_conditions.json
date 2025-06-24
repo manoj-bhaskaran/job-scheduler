@@ -1,0 +1,33 @@
+{
+  "job_name": "on_new_file",
+  "run_as_user": "CORP\\svc_filewatcher",
+  "base_directory": "C:\\jobs\\filewatcher",
+  "enforce_path_security": true,
+  "trigger": {
+    "type": "event",
+    "event_source": "file_created:C:\\incoming\\*.csv"
+  },
+  "steps": [
+    {
+      "name": "import_csv",
+      "path": "C:\\jobs\\filewatcher\\import_csv.ps1",
+      "args": [
+        "-force"
+      ]
+    },
+    {
+      "name": "archive_file",
+      "path": "C:\\jobs\\filewatcher\\archive.ps1",
+      "condition": {
+        "operator": "AND",
+        "operands": [
+          {
+            "type": "all_previous",
+            "comparison": "<=",
+            "value": 0
+          }
+        ]
+      }
+    }
+  ]
+}
