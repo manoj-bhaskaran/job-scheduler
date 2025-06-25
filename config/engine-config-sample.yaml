@@ -1,0 +1,7 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+
+# Engine Configuration File
+# Specifies log file path and job definition directory
+
+log_file: C:\job-scheduler\logs\scheduler.log
+job_config_dir: C:\job-scheduler\config\jobs

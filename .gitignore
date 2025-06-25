@@ -12,6 +12,7 @@ __pycache__/
 *.pyc
 env/
 venv/
+.venv/
 
 # PowerShell backups
 *.ps1~
