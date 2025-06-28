@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  issues: write  # 🔧 Added to allow label modification
 
 jobs:
   inherit-labels:
@@ -13,17 +14,6 @@ jobs:
     steps:
       - name: Install jq
         run: sudo apt-get install -y jq
-
-      - name: Authenticate GitHub CLI
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: echo "${GH_TOKEN}" | gh auth login --with-token
-
-      - name: Set up environment
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          echo "GH_TOKEN=$GH_TOKEN" >> $GITHUB_ENV
 
       - name: Get parent issue and inherit labels
         env:
@@ -34,14 +24,22 @@ jobs:
         run: |
           echo "Fetching internal ID of issue #$ISSUE_NUMBER..."
 
-          ISSUE_ID=$(gh api graphql -f owner="$REPO_OWNER" -f repository="$REPO_NAME" -F number="$ISSUE_NUMBER" -f query='
+          GRAPHQL_RESPONSE=$(gh api graphql -f owner="$REPO_OWNER" -f repository="$REPO_NAME" -F number="$ISSUE_NUMBER" -f query='
             query ($owner: String!, $repository: String!, $number: Int!) {
               repository(owner: $owner, name: $repository) {
                 issue(number: $number) {
                   id
                 }
               }
-            }' --jq '.data.repository.issue.id')
+            }')
+
+          if echo "$GRAPHQL_RESPONSE" | jq -e '.errors' >/dev/null; then
+            echo "❌ GraphQL error while fetching issue ID:"
+            echo "$GRAPHQL_RESPONSE"
+            exit 1
+          fi
+
+          ISSUE_ID=$(echo "$GRAPHQL_RESPONSE" | jq -r '.data.repository.issue.id')
 
           if [ -z "$ISSUE_ID" ]; then
             echo "❌ Failed to get issue ID for #$ISSUE_NUMBER"
@@ -70,6 +68,12 @@ jobs:
                 }
               }')
 
+          if echo "$PARENT_JSON" | jq -e '.errors' >/dev/null; then
+            echo "❌ GraphQL error while fetching parent issue:"
+            echo "$PARENT_JSON"
+            exit 1
+          fi
+
           echo "$PARENT_JSON" | tee parent.json
 
           PARENT_NUMBER=$(echo "$PARENT_JSON" | jq -r '.data.node.parent.number')
@@ -86,7 +90,17 @@ jobs:
 
           echo "✅ Inheriting labels from parent issue #$PARENT_NUMBER: $LABELS"
 
-          curl -X POST -H "Authorization: token $GH_TOKEN" \
+          echo "Applying labels via REST API..."
+          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" -X POST \
+            -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/issues/${ISSUE_NUMBER}/labels \
-            -d "{\"labels\": $LABELS}"
+            -d "{\"labels\": $LABELS}")
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "❌ Failed to apply labels. HTTP $HTTP_CODE"
+            cat response.json
+            exit 1
+          fi
+
+          echo "✅ Labels applied successfully."
