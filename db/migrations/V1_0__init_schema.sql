@@ -1,11 +1,10 @@
 -- Licensed under the Apache License, Version 2.0
 -- See http://www.apache.org/licenses/LICENSE-2.0 for details
 
--- Create schema for job scheduler
-CREATE SCHEMA IF NOT EXISTS scheduler;
+-- Migration: V1.0 Initial schema setup for Job Scheduler
 
--- Optional: Set search_path for this session
--- SET search_path TO scheduler;
+-- Create schema
+CREATE SCHEMA IF NOT EXISTS scheduler;
 
 -- Track schema versioning
 CREATE TABLE scheduler.schema_version (
