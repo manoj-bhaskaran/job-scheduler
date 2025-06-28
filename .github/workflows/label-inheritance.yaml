@@ -14,17 +14,6 @@ jobs:
       - name: Install jq
         run: sudo apt-get install -y jq
 
-      - name: Authenticate GitHub CLI
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: echo "${GH_TOKEN}" | gh auth login --with-token
-
-      - name: Set up environment
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          echo "GH_TOKEN=$GH_TOKEN" >> $GITHUB_ENV
-
       - name: Get parent issue and inherit labels
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
