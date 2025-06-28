@@ -10,7 +10,7 @@ on:
 jobs:
   sonarcloud:
     name: SonarCloud
-    runs-on: ubuntu-latest
+    runs-on: windows-latest  # <-- Use Windows
 
     steps:
       - uses: actions/checkout@v4
@@ -25,12 +25,12 @@ jobs:
       - name: Install dependencies and tools
         run: |
           python -m pip install --upgrade pip
+          pip install -r requirements.txt
           pip install pytest pytest-cov
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Run Tests and Generate Coverage
         run: |
-          export PYTHONPATH=.
+          $env:PYTHONPATH = "."
           pytest service/tests --cov=service/src --cov-report=xml
 
       - name: SonarCloud Scan
@@ -39,3 +39,4 @@ jobs:
           projectBaseDir: .
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
