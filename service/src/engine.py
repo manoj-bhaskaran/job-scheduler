@@ -18,7 +18,7 @@ import signal
 import logging
 import threading
 from datetime import datetime, timedelta
-from service.dispatcher import dispatch_job
+from .dispatcher import dispatch_job
 from config.job_loader import load_jobs
 import win32evtlogutil
 import win32evtlog
