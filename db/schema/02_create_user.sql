@@ -41,3 +41,7 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA scheduler TO job_scheduler_migrator;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA scheduler
 GRANT ALL ON TABLES TO job_scheduler_migrator;
+
+-- scripts/grant_backup_user.sql
+GRANT CONNECT ON DATABASE job_scheduler TO backup_user;
+GRANT pg_read_all_data TO backup_user;
