@@ -6,22 +6,14 @@ on:
 
 permissions:
   contents: read
-  issues: write
+  issues: write  # Needed to apply labels
 
 jobs:
   inherit-labels:
     runs-on: ubuntu-latest
     steps:
-      - name: Debug GH_TOKEN
-        run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "❌ GH_TOKEN is not set"
-            exit 1
-          fi
-          echo "✅ GH_TOKEN is set (length: ${#GH_TOKEN})"
-          gh auth status || { echo "❌ GH_TOKEN authentication failed"; exit 1; }
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+      - name: Install jq
+        run: sudo apt-get install -y jq
 
       - name: Get parent issue and inherit labels
         env:
@@ -48,7 +40,6 @@ jobs:
           fi
 
           ISSUE_ID=$(echo "$GRAPHQL_RESPONSE" | jq -r '.data.repository.issue.id')
-
           if [ -z "$ISSUE_ID" ]; then
             echo "❌ Failed to get issue ID for #$ISSUE_NUMBER"
             exit 1
@@ -90,26 +81,23 @@ jobs:
             exit 0
           fi
 
-          LABELS=$(echo "$PARENT_JSON" | jq -r '.data.node.parent.labels.nodes[].name' | jq -R . | jq -s .)
+          LABELS=$(echo "$PARENT_JSON" | jq '.data.node.parent.labels.nodes | map(.name)')
           if [ "$LABELS" = "[]" ]; then
             echo "ℹ️ Parent issue has no labels. Nothing to inherit."
             exit 0
           fi
 
-          echo "✅ Inheriting labels from parent issue #$PARENT_NUMBER: $(echo "$LABELS" | jq -r '.[]')"
-
-          echo "Fetching current labels..."
-          CURRENT_LABELS=$(gh api -H "Accept: application/vnd.github+json" \
-            /repos/${REPO_OWNER}/${REPO_NAME}/issues/${ISSUE_NUMBER} \
-            --jq '.labels[].name' | jq -R . | jq -s .)
-          MERGED_LABELS=$(echo "$CURRENT_LABELS $LABELS" | jq -s 'flatten | unique')
+          echo "✅ Inheriting labels from parent issue #$PARENT_NUMBER: $LABELS"
 
           echo "Applying labels via REST API..."
-          gh api -X POST -H "Accept: application/vnd.github+json" \
-            /repos/${REPO_OWNER}/${REPO_NAME}/issues/${ISSUE_NUMBER}/labels \
-            -f "labels=$MERGED_LABELS" > response.json
-          if [ $? -ne 0 ]; then
-            echo "❌ Failed to apply labels"
+          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" -X POST \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/issues/${ISSUE_NUMBER}/labels \
+            -d "{\"labels\": $LABELS}")
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "❌ Failed to apply labels. HTTP $HTTP_CODE"
             cat response.json
             exit 1
           fi
