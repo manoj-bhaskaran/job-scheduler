@@ -1,0 +1,4 @@
+pyyaml
+pywin32
+pytest
+pytest-cov
