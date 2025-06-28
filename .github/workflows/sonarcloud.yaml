@@ -26,6 +26,10 @@ jobs:
         run: |
           pip install -r requirements.txt || echo "No requirements.txt found"
 
+      - name: Ensure test tools are installed
+        run: |
+          pip install pytest pytest-cov
+
       - name: Run Tests and Generate Coverage
         run: |
           export PYTHONPATH=.
