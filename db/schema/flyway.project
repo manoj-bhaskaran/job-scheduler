@@ -1,3 +1,0 @@
-[project]
-name = "job-scheduler-db"
-locations = ["filesystem:db/migrations"]
